@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CreateCard from '../create-card'
 
 const mockPush = vi.fn()
-vi.mock('next/navigation', () => ({
+vi.mock('@/next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }))
 
@@ -13,11 +13,19 @@ vi.mock('@/app/components/base/amplitude', () => ({
   trackEvent: vi.fn(),
 }))
 
-vi.mock('@/app/components/base/toast', () => ({
-  default: {
-    notify: vi.fn(),
-  },
+const { mockToastNotify } = vi.hoisted(() => ({
+  mockToastNotify: vi.fn(),
 }))
+
+vi.mock('@/app/components/base/toast', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/app/components/base/toast')>()
+  return {
+    ...actual,
+    default: Object.assign(actual.default, {
+      notify: mockToastNotify,
+    }),
+  }
+})
 
 const mockCreateEmptyDataset = vi.fn()
 const mockInvalidDatasetList = vi.fn()
@@ -37,6 +45,8 @@ vi.mock('@/service/knowledge/use-dataset', () => ({
 describe('CreateCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockToastNotify.mockReset()
+    mockToastNotify.mockImplementation(() => ({ clear: vi.fn() }))
   })
 
   describe('Rendering', () => {

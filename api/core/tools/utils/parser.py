@@ -1,4 +1,5 @@
 import re
+from collections.abc import Mapping
 from json import dumps as json_dumps
 from json import loads as json_loads
 from json.decoder import JSONDecodeError
@@ -14,16 +15,24 @@ from core.tools.entities.tool_entities import ApiProviderSchemaType, ToolParamet
 from core.tools.errors import ToolApiSchemaError, ToolNotSupportedError, ToolProviderNotFoundError
 
 
-class _OpenAPIInterface(TypedDict):
+class InterfaceDict(TypedDict):
     path: str
     method: str
     operation: dict[str, Any]
 
 
+class OpenAPISpecDict(TypedDict):
+    openapi: str
+    info: dict[str, str]
+    servers: list[dict[str, Any]]
+    paths: dict[str, Any]
+    components: dict[str, Any]
+
+
 class ApiBasedToolSchemaParser:
     @staticmethod
     def parse_openapi_to_tool_bundle(
-        openapi: dict, extra_info: dict | None = None, warning: dict | None = None
+        openapi: Mapping[str, Any], extra_info: dict | None = None, warning: dict | None = None
     ) -> list[ApiToolBundle]:
         warning = warning if warning is not None else {}
         extra_info = extra_info if extra_info is not None else {}
@@ -41,17 +50,17 @@ class ApiBasedToolSchemaParser:
             server_url = matched_servers[0] if matched_servers else server_url
 
         # list all interfaces
-        interfaces: list[_OpenAPIInterface] = []
+        interfaces: list[InterfaceDict] = []
         for path, path_item in openapi["paths"].items():
             methods = ["get", "post", "put", "delete", "patch", "head", "options", "trace"]
             for method in methods:
                 if method in path_item:
                     interfaces.append(
-                        _OpenAPIInterface(
-                            path=path,
-                            method=method,
-                            operation=path_item[method],
-                        )
+                        {
+                            "path": path,
+                            "method": method,
+                            "operation": path_item[method],
+                        }
                     )
 
         # get all parameters
@@ -277,7 +286,7 @@ class ApiBasedToolSchemaParser:
     @staticmethod
     def parse_swagger_to_openapi(
         swagger: dict, extra_info: dict | None = None, warning: dict | None = None
-    ) -> dict[str, Any]:
+    ) -> OpenAPISpecDict:
         warning = warning or {}
         """
         parse swagger to openapi
@@ -293,7 +302,7 @@ class ApiBasedToolSchemaParser:
         if len(servers) == 0:
             raise ToolApiSchemaError("No server found in the swagger yaml.")
 
-        converted_openapi: dict[str, Any] = {
+        converted_openapi: OpenAPISpecDict = {
             "openapi": "3.0.0",
             "info": {
                 "title": info.get("title", "Swagger"),
