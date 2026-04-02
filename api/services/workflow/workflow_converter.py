@@ -1,6 +1,12 @@
 import json
 from typing import Any
 
+from graphon.file import FileUploadConfig
+from graphon.model_runtime.entities.llm_entities import LLMMode
+from graphon.model_runtime.utils.encoders import jsonable_encoder
+from graphon.nodes import BuiltinNodeTypes
+from graphon.variables.input_entities import VariableEntity
+from sqlalchemy import select
 from typing_extensions import TypedDict
 
 from core.app.app_config.entities import (
@@ -17,11 +23,6 @@ from core.app.apps.completion.app_config_manager import CompletionAppConfigManag
 from core.helper import encrypter
 from core.prompt.simple_prompt_transform import SimplePromptTransform
 from core.prompt.utils.prompt_template_parser import PromptTemplateParser
-from dify_graph.file.models import FileUploadConfig
-from dify_graph.model_runtime.entities.llm_entities import LLMMode
-from dify_graph.model_runtime.utils.encoders import jsonable_encoder
-from dify_graph.nodes import BuiltinNodeTypes
-from dify_graph.variables.input_entities import VariableEntity
 from events.app_event import app_was_created
 from extensions.ext_database import db
 from models import Account
@@ -648,10 +649,10 @@ class WorkflowConverter:
         :param api_based_extension_id: api based extension id
         :return:
         """
-        api_based_extension = (
-            db.session.query(APIBasedExtension)
+        api_based_extension = db.session.scalar(
+            select(APIBasedExtension)
             .where(APIBasedExtension.tenant_id == tenant_id, APIBasedExtension.id == api_based_extension_id)
-            .first()
+            .limit(1)
         )
 
         if not api_based_extension:

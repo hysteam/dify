@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => {
     || process.argv.some(arg => arg.toLowerCase().includes('storybook'))
 
   return {
+    staged: {
+      '*': 'eslint --fix --pass-on-unpruned-suppressions',
+    },
     plugins: isTest
       ? [
           nextStaticImageTestPlugin({ projectRoot }),
@@ -75,7 +78,8 @@ export default defineConfig(({ mode }) => {
 
     // Vitest config
     test: {
-      environment: 'jsdom',
+      pool: 'threads',
+      environment: 'happy-dom',
       globals: true,
       setupFiles: ['./vitest.setup.ts'],
       coverage: {
