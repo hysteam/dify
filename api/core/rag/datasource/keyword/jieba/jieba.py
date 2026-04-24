@@ -1,10 +1,9 @@
 from collections import defaultdict
-from typing import Any
+from typing import Any, TypedDict
 
 import orjson
 from pydantic import BaseModel
 from sqlalchemy import select
-from typing_extensions import TypedDict
 
 from configs import dify_config
 from core.rag.datasource.keyword.jieba.jieba_keyword_table_handler import JiebaKeywordTableHandler
@@ -140,8 +139,10 @@ class Jieba(BaseKeyword):
             "__data__": {"index_id": self.dataset.id, "summary": None, "table": keyword_table},
         }
         dataset_keyword_table = self.dataset.dataset_keyword_table
-        keyword_data_source_type = dataset_keyword_table.data_source_type
+        keyword_data_source_type = dataset_keyword_table.data_source_type if dataset_keyword_table else "file"
         if keyword_data_source_type == "database":
+            if dataset_keyword_table is None:
+                return
             dataset_keyword_table.keyword_table = dumps_with_sets(keyword_table_dict)
             db.session.commit()
         else:
@@ -155,7 +156,8 @@ class Jieba(BaseKeyword):
         if dataset_keyword_table:
             keyword_table_dict = dataset_keyword_table.keyword_table_dict
             if keyword_table_dict:
-                return dict(keyword_table_dict["__data__"]["table"])
+                data: Any = keyword_table_dict["__data__"]
+                return dict(data["table"])
         else:
             keyword_data_source_type = dify_config.KEYWORD_DATA_SOURCE_TYPE
             dataset_keyword_table = DatasetKeywordTable(
