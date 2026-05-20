@@ -52,7 +52,7 @@ export type PromptVariable = {
   key: string
   name: string
   type: string // "string" | "number" | "select",
-  default?: string | number
+  default?: string | number | boolean
   required?: boolean
   options?: string[]
   max_length?: number
@@ -114,7 +114,7 @@ export type ModerationConfig = MoreLikeThisConfig & {
   } & Partial<Record<string, any>>
 }
 
-export type RetrieverResourceConfig = MoreLikeThisConfig
+type RetrieverResourceConfig = MoreLikeThisConfig
 export type AgentConfig = {
   enabled: boolean
   strategy: AgentStrategy
